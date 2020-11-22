@@ -1101,7 +1101,7 @@ public class PropsUI extends Props {
 
   public boolean showWelcomePageOnStartup() {
     String show = properties.getProperty( STRING_SHOW_WELCOME_PAGE_ON_STARTUP, YES );
-    return YES.equalsIgnoreCase( show );
+    return YES.equalsIgnoreCase( "N" );
   }
 
   public void setShowWelcomePageOnStartup( boolean show ) {
