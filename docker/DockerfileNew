@@ -1,0 +1,91 @@
+FROM repo.lczhsl.com/drp-hb/webspoon-java-tomcat:v1.0.0
+MAINTAINER wuwu
+##设置初始化目录路径
+ENV MYPATH /usr/local/tomcat
+WORKDIR $MYPATH
+
+ENV JAVA_OPTS="-Xms1024m -Xmx2048m"
+RUN rm -rf ${CATALINA_HOME}/webapps/* \
+    && mkdir ${CATALINA_HOME}/webapps/ROOT \
+    && echo "<% response.sendRedirect(\"spoon\"); %>" > ${CATALINA_HOME}/webapps/ROOT/index.jsp
+
+ARG base=9.0
+ARG patch=22
+ARG version=0.$base.$patch
+ARG dist=9.0.0.0-423
+
+#创建用户组
+#RUN groupadd -r tomcat \
+#    && useradd -r --create-home -g tomcat tomcat \
+#    && chown -R  tomcat:tomcat ${CATALINA_HOME}
+#USER tomcat
+
+#复制本地依赖
+COPY ./jingxiang/system ${CATALINA_HOME}/system
+COPY ./jingxiang/lib/webspoon-security-9.0.0.0-423-22.jar ${CATALINA_HOME}/lib
+COPY ./jingxiang/lib/db2jcc4-4.23.42.jar ${CATALINA_HOME}/lib
+COPY ./jingxiang/lib/DmJdbcDriver18.jar ${CATALINA_HOME}/lib
+COPY ./jingxiang/lib/mysql-connector-java-5.1.47.jar ${CATALINA_HOME}/lib
+COPY ./jingxiang/lib/ojdbc14-10.2.0.4.0.jar ${CATALINA_HOME}/lib
+COPY ./jingxiang/lib/postgresql-42.2.5.jar ${CATALINA_HOME}/lib
+COPY ./jingxiang/plugins ${CATALINA_HOME}/plugins
+COPY ./jingxiang/simple-jndi ${CATALINA_HOME}/simple-jndi
+COPY ./jingxiang/samples ${CATALINA_HOME}/samples
+COPY ./jingxiang/webSpoon-LICENSE.txt ${CATALINA_HOME}
+COPY ./jingxiang/spoon.war ${CATALINA_HOME}/webapps/spoon.war
+ARG CACHEBUST=1
+#
+
+# 清空/etc/apt/sources.list文件
+RUN mkdir -p /etc/apt
+# 使用 echo 命令写入软件源地址到 /etc/apt/sources.list 文件
+RUN echo -e "deb http://mirrors.aliyun.com/debian/ stretch main non-free contrib \n\
+deb-src http://mirrors.aliyun.com/debian/ stretch main non-free contrib \n\
+deb http://mirrors.aliyun.com/debian-security stretch/updates main \n\
+deb-src http://mirrors.aliyun.com/debian-security stretch/updates main \n\
+deb http://mirrors.aliyun.com/debian/ stretch-updates main non-free contrib \n\
+deb-src http://mirrors.aliyun.com/debian/ stretch-updates main non-free contrib \n\
+deb http://mirrors.aliyun.com/debian/ stretch-backports main non-free contrib \n\
+deb-src http://mirrors.aliyun.com/debian/ stretch-backports main non-free contrib" > /etc/apt/sources.list
+
+#deb http://deb.debian.org/debian buster main
+#deb http://security.debian.org/debian-security buster/updates main
+#deb http://deb.debian.org/debian buster-updates main
+#更新软件列表 这个过程可能会有点慢 耐心等待（ yum失败，但不影响spoon汉化）
+#RUN apt-get update
+#RUN apt-get install -y libtinfo5 --allow-remove-essential
+
+# 更新软件列表并安装libtinfo5软件包
+#RUN yum update -y && \
+#    yum install -y libtinfo5 --setopt=protected_multilib=false --setopt=tsflags=nodocs --allow-remove-essential && \
+#    yum clean all
+
+
+RUN echo "org.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH=true" | tee -a ${CATALINA_HOME}/conf/catalina.properties
+
+#spoon汉化
+RUN echo "CLASSPATH="$CATALINA_HOME"/lib/webspoon-security-$dist-$patch.jar" | tee -a ${CATALINA_HOME}/bin/setenv.sh
+RUN echo "CATALINA_OPTS="-Dorg.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH=true"" | tee -a ${CATALINA_HOME}/bin/setenv.sh
+RUN echo "JAVA_OPTS='-Duser.language=zh -Duser.region=CN -Dfile.encoding=UTF-8'" | tee -a ${CATALINA_HOME}/bin/setenv.sh
+#给Tomcat配置时区
+RUN sed -i 's/JAVA_OPTS="$JAVA_OPTS -Djava.protocol.handler.pkgs=org.apache.catalina.webresources"/JAVA_OPTS="$JAVA_OPTS -Djava.protocol.handler.pkgs=org.apache.catalina.webresources -Duser.timezone=GMT+08"/' ${CATALINA_HOME}/bin/catalina.sh
+
+
+
+
+
+
+#升级漏洞
+#1.org.eclipse.jetty （9.4.47.v20220610）
+        #直接修改本地文件pom下 <jetty.version>9.4.47.v20220610</jetty.version>版本 然后maven重新加载、打包
+        #<groupId>org.pentaho</groupId>
+       #  <artifactId>pentaho-parent-pom</artifactId>
+       #  <version>9.0.0.0-423</version>
+#2.xstream （1.4.14）
+       #直接修改本地文件pom下 xstream版本， <xstream.version>1.4.14</xstream.version> 然后maven重新加载、打包
+       #<groupId>org.pentaho</groupId>
+       # <artifactId>pentaho-parent-pom</artifactId>
+       # <version>9.0.0.0-423</version>
+
+
+
