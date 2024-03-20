@@ -192,7 +192,7 @@ public class RepositoryConnectMenu {
             } );
           }
         }
-
+      // 资源库管理按钮注释
         new MenuItem( connectionMenu, SWT.SEPARATOR );
         MenuItem managerItem = new MenuItem( connectionMenu, SWT.NONE );
         managerItem.setText( BaseMessages.getString( PKG, "RepositoryConnectMenu.RepositoryManager" ) );
